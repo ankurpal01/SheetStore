@@ -159,6 +159,7 @@ export default function App() {
       case "categories": return <CategoriesPage onNavigate={navigate} />;
       case "category": return <TemplatesPage onNavigate={navigate} onBuy={handleBuyClick} initialCategory={route.params.name} />;
       case "about": return <AboutPage />;
+      case "tools": return <FreeToolsPage onNavigate={navigate} />;
       case "privacy": return <PrivacyPage onNavigate={navigate} />;
       case "terms": return <TermsPage onNavigate={navigate} />;
       case "refund": return <RefundPage onNavigate={navigate} />;
