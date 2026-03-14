@@ -1,10 +1,12 @@
 import { Download, Link as LinkIcon } from "lucide-react";
 
 export default function TemplateCard({ template, onNavigate, onBuy }) {
-  // 👇 YAHAN CHANGE KIYA HAI 👇
+  // 👇 YAHAN SMART IMAGE LOGIC ADD KIYA HAI 👇
   const imageUrl = template.image 
-    ? `${import.meta.env.VITE_API_URL}/uploads/${template.image}` 
-    : "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop"; 
+    ? (template.image.startsWith("http") 
+        ? template.image // Agar naya Cloudinary link hai, toh wahi dikhao
+        : `${import.meta.env.VITE_API_URL}/uploads/${template.image}`) // Agar purani image hai, toh backend ka URL jodo
+    : "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1000&auto=format&fit=crop"; // Default image
 
   const categoryName = typeof template.category === 'object' ? template.category?.name : template.category;
 
