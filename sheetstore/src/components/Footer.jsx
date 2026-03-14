@@ -95,10 +95,8 @@ const Footer = ({ onNavigate }) => {
             </div>
           </div>
 
-          <div className="hidden md:block md:col-span-1"></div>
-
           {/* Quick Links */}
-          <div className="md:col-span-2">
+          <div className="md:col-span-2 md:col-start-6">
             <h4 className="text-white font-bold text-sm uppercase tracking-widest mb-6">Explore</h4>
             <ul className="space-y-4">
               <li><button onClick={() => onNavigate("home")} className="text-slate-400 hover:text-indigo-400 transition-all text-sm">Home</button></li>
@@ -114,6 +112,8 @@ const Footer = ({ onNavigate }) => {
               <li><button onClick={() => onNavigate("privacy")} className="text-slate-400 hover:text-white transition-all text-sm">Privacy Policy</button></li>
               <li><button onClick={() => onNavigate("terms")} className="text-slate-400 hover:text-white transition-all text-sm">Terms of Service</button></li>
               <li><button onClick={() => onNavigate("refund")} className="text-slate-400 hover:text-white transition-all text-sm">Refund Policy</button></li>
+              {/* 👇 YAHAN NAYA LINK ADD KIYA HAI 👇 */}
+              <li><button onClick={() => onNavigate("shipping")} className="text-slate-400 hover:text-white transition-all text-sm">Shipping & Delivery</button></li>
             </ul>
           </div>
 

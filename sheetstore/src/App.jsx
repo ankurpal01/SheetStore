@@ -18,6 +18,7 @@ import TermsPage from "./pages/TermsPage";
 import RefundPage from "./pages/RefundPage";
 import FreeToolsPage from "./pages/FreeToolsPage";
 import { ArrowUp } from 'lucide-react';
+import ShippingPolicy from ".pages/ShippingPolicy";
 
 // ==========================================
 // 🚀 ANALYTICS SAFETY INITIALIZATION
@@ -164,6 +165,7 @@ export default function App() {
       case "terms": return <TermsPage onNavigate={navigate} />;
       case "refund": return <RefundPage onNavigate={navigate} />;
       case "contact": return <ContactPage onNavigate={navigate} />;
+      case "shipping": return <ShippingPolicy />;
       case "admin": return <AdminPage onNavigate={navigate} />;
       case "success": return <SuccessPage orderId={route.params.orderId} onNavigate={navigate} />;
       default: return <HomePage onNavigate={navigate} onBuy={handleBuyClick} />;
