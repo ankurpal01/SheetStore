@@ -4,9 +4,11 @@ const cors = require("cors");
 const multer = require("multer");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
-const path = require("path");
 require("dotenv").config();
-const fs = require("fs");
+
+// 🔥 CLOUDINARY IMPORTS 🔥
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
 const Category = require("./models/Category");
 const Template = require("./models/Template");
@@ -14,32 +16,43 @@ const Order = require("./models/Order");
 
 const app = express();
 
-// ================= 1. DYNAMIC FOLDER CREATION (Deployment Fix) =================
-const uploadDir = path.join(__dirname, "uploads");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-  console.log("Uploads folder created successfully.");
-}
+// ================= 1. CLOUDINARY CONFIG =================
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-// ================= 2. PRODUCTION CORS CONFIG (Sabse Zaroori) =================
+// ================= 2. PRODUCTION CORS CONFIG =================
 app.use(cors({
-  origin: "*", // Sabhi origins allow karega (Vercel ke liye best)
+  origin: "*", 
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
 
 app.use(express.json());
-app.use("/uploads", express.static(uploadDir));
 
-// ================= 3. MULTER CONFIG =================
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, "uploads/");
-  },
-  filename: function (req, file, cb) {
-    cb(null, Date.now() + "-" + file.originalname.replace(/\s+/g, "-"));
+// ================= 3. CLOUDINARY MULTER STORAGE =================
+// Ye automatically image ko images folder me aur excel ko raw folder me daalega
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: async (req, file) => {
+    if (file.fieldname === "image") {
+      return {
+        folder: "sheetstore/images",
+        allowed_formats: ["jpg", "jpeg", "png", "webp"],
+        resource_type: "image"
+      };
+    } else if (file.fieldname === "file") {
+      return {
+        folder: "sheetstore/files",
+        resource_type: "raw", // Raw is used for Excel, Zip, PDF etc.
+        format: file.originalname.split('.').pop() 
+      };
+    }
   }
 });
+
 const upload = multer({ storage });
 
 // ================= 4. DATABASE CONNECTION =================
@@ -54,7 +67,6 @@ const razorpay = new Razorpay({
 });
 
 // ================= CATEGORY ROUTES =================
-
 app.post("/admin/category", async (req, res) => {
   try {
     const { name } = req.body;
@@ -87,8 +99,7 @@ app.delete("/admin/category/:id", async (req, res) => {
   }
 });
 
-// ================= TEMPLATE ROUTES (HYBRID) =================
-
+// ================= TEMPLATE ROUTES (CLOUD HYBRID) =================
 app.post("/admin/template", upload.fields([
   { name: "image", maxCount: 1 },
   { name: "file", maxCount: 1 }
@@ -96,7 +107,7 @@ app.post("/admin/template", upload.fields([
   try {
     const { title, description, price, category, features, whoShouldUse, productType, sheetUrl } = req.body;
 
-    if (!req.files || !req.files.image) return res.status(400).json({ error: "Product image is required" });
+    if (!req.files || !req.files['image']) return res.status(400).json({ error: "Product image is required" });
 
     const featuresArray = features ? features.split(",").map(f => f.trim()).filter(f => f) : [];
     const whoShouldUseArray = whoShouldUse ? whoShouldUse.split(",").map(w => w.trim()).filter(w => w) : [];
@@ -105,7 +116,7 @@ app.post("/admin/template", upload.fields([
       title, description, price, category,
       features: featuresArray,
       whoShouldUse: whoShouldUseArray,
-      image: req.files.image[0].filename,
+      image: req.files['image'][0].path, // 🔥 Ab yahan Cloudinary ka permanent link aayega!
       productType: productType || "excel"
     };
 
@@ -113,13 +124,14 @@ app.post("/admin/template", upload.fields([
       if (!sheetUrl) return res.status(400).json({ error: "Google Sheet Link is required" });
       newTemplateData.sheetUrl = sheetUrl;
     } else {
-      if (!req.files.file) return res.status(400).json({ error: "Excel/Zip file is required" });
-      newTemplateData.fileName = req.files.file[0].filename;
+      if (!req.files['file']) return res.status(400).json({ error: "Excel/Zip file is required" });
+      newTemplateData.fileName = req.files['file'][0].path; // 🔥 File ka permanent Cloudinary link
     }
 
     const newTemplate = await Template.create(newTemplateData);
     res.json(newTemplate);
   } catch (err) {
+    console.log(err);
     res.status(500).json({ error: "Failed to create template" });
   }
 });
@@ -138,24 +150,15 @@ app.delete("/admin/template/:id", async (req, res) => {
     const template = await Template.findById(req.params.id);
     if (!template) return res.status(404).json({ error: "Template not found" });
 
-    if (template.image) {
-      const imagePath = path.join(uploadDir, template.image);
-      if (fs.existsSync(imagePath)) fs.unlinkSync(imagePath);
-    }
-    if (template.fileName) {
-      const filePath = path.join(uploadDir, template.fileName);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    }
-
+    // Local file system delete logic removed kyunki files ab Cloud par hain
     await Template.findByIdAndDelete(req.params.id);
-    res.json({ message: "Product and files deleted" });
+    res.json({ message: "Product deleted from database" });
   } catch (err) {
     res.status(500).json({ error: "Delete failed" });
   }
 });
 
 // ================= PAYMENT ROUTES =================
-
 app.post("/create-order", async (req, res) => {
   try {
     const { amount, templateId, templateName } = req.body;
@@ -209,15 +212,18 @@ app.get("/order/:orderId", async (req, res) => {
   }
 });
 
-// ================= DOWNLOAD / ACCESS =================
+// ================= DOWNLOAD / ACCESS ROUTE =================
 app.get("/download/:templateId", async (req, res) => {
   try {
     const template = await Template.findById(req.params.templateId);
     if (!template || template.productType === 'google_sheet' || !template.fileName) {
        return res.status(400).json({ error: "Invalid download request" });
     }
-    const filePath = path.join(uploadDir, template.fileName);
-    res.download(filePath, template.fileName);
+    
+    // 🔥 Ab fileName me Cloudinary ka link hai, toh hum user ko wahan redirect kar denge. 
+    // Isse browser file automatically download kar lega.
+    res.redirect(template.fileName);
+
   } catch (err) {
     res.status(500).json({ error: "Download failed" });
   }
@@ -236,7 +242,7 @@ app.post("/admin/login", (req, res) => {
   }
 });
 
-// ================= 6. DYNAMIC PORT (Render Fix) =================
+// ================= 6. SERVER START =================
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
