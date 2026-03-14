@@ -18,7 +18,7 @@ import TermsPage from "./pages/TermsPage";
 import RefundPage from "./pages/RefundPage";
 import FreeToolsPage from "./pages/FreeToolsPage";
 import { ArrowUp } from 'lucide-react';
-import ShippingPolicy from ".pages/ShippingPolicy";
+import ShippingPolicy from "./pages/ShippingPolicy";
 
 // ==========================================
 // 🚀 ANALYTICS SAFETY INITIALIZATION
