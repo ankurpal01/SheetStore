@@ -22,7 +22,7 @@ const HomePage = ({ onNavigate, onBuy }) => {
   useEffect(() => {
     const fetchLatestTemplates = async () => {
       try {
-        // 👇 YAHAN PAR CHANGE KIYA HAI 👇
+       
         const res = await fetch(`${import.meta.env.VITE_API_URL}/templates`);
         
         if (res.ok) {

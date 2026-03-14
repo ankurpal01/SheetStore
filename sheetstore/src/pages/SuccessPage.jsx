@@ -11,13 +11,13 @@ export default function SuccessPage({ orderId, onNavigate }) {
   useEffect(() => {
     const fetchSuccessData = async () => {
       try {
-        // 👇 1. YAHAN CHANGE KIYA HAI 👇
+        
         const orderRes = await fetch(`${import.meta.env.VITE_API_URL}/order/${orderId}`);
         const orderData = await orderRes.json();
         setOrder(orderData);
 
         if (orderData && orderData.templateId) {
-          // 👇 2. YAHAN CHANGE KIYA HAI 👇
+       
           const tempRes = await fetch(`${import.meta.env.VITE_API_URL}/templates`);
           const allTemplates = await tempRes.json();
           const purchasedTemplate = allTemplates.find(t => t._id === orderData.templateId);
