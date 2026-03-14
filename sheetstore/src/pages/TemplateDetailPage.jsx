@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import ReactGA from "react-ga4"; // Analytics Import
+import { useEffect, useState } from "react";
+import ReactGA from "react-ga4";
 import {
   ChevronRight,
   CheckCircle2,
@@ -13,17 +13,16 @@ import {
   FileSpreadsheet,
   Zap,
   Link as LinkIcon,
-  Download
+  Download,
+  ArrowLeft,
+  Calendar
 } from "lucide-react";
 
-import TemplateCard from "../components/TemplateCard";
 import { callGemini } from "../utils/callGemini";
 
 const TemplateDetailPage = ({ id, onNavigate, onBuy }) => {
   const [template, setTemplate] = useState(null);
-  const [relatedTemplates, setRelatedTemplates] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
   const [industry, setIndustry] = useState("");
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState("");
@@ -31,22 +30,13 @@ const TemplateDetailPage = ({ id, onNavigate, onBuy }) => {
   useEffect(() => {
     const fetchTemplateDetails = async () => {
       try {
-        // 👇 YAHAN CHANGE KIYA HAI 👇
         const res = await fetch(`${import.meta.env.VITE_API_URL}/templates`);
-        
         if (res.ok) {
           const allTemplates = await res.json();
           const currentTemplate = allTemplates.find((t) => t._id === id);
           setTemplate(currentTemplate);
 
           if (currentTemplate) {
-            const currentCatId = currentTemplate.category?._id || currentTemplate.category;
-            const related = allTemplates.filter(
-              (t) => (t.category?._id || t.category) === currentCatId && t._id !== id
-            ).slice(0, 3);
-            setRelatedTemplates(related);
-
-            // NAYA: Track Product View
             ReactGA.event({
               category: "Engagement",
               action: "View Product Details",
@@ -55,227 +45,215 @@ const TemplateDetailPage = ({ id, onNavigate, onBuy }) => {
           }
         }
       } catch (error) {
-        console.error("Failed to load template details", error);
+        console.error("Failed to load details", error);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchTemplateDetails();
   }, [id]);
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
-        <div className="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
-        <p className="text-xl text-slate-500 font-semibold animate-pulse">Loading Template Details...</p>
-      </div>
-    );
-  }
-
-  if (!template) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-center bg-white p-10 rounded-3xl border shadow-sm">
-          <FileSpreadsheet className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold mb-4 text-slate-900">Template not found</h2>
-          <button
-            onClick={() => onNavigate("templates")}
-            className="text-indigo-600 hover:text-indigo-800 font-bold transition-colors"
-          >
-            &larr; Return to all templates
-          </button>
+        <div className="relative w-20 h-20">
+          <div className="absolute inset-0 border-4 border-indigo-100 rounded-full"></div>
+          <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
         </div>
+        <p className="mt-6 text-slate-500 font-bold tracking-widest animate-pulse">LOADING DETAILS...</p>
       </div>
     );
   }
 
-  // NAYA: Track AI Usage
+  if (!template) return <div className="text-center py-20">Template Not Found</div>;
+
+  // 🔥 SMART IMAGE LOGIC (Cloudinary + Local)
+  const imageUrl = template.image 
+    ? (template.image.startsWith('http') ? template.image : `${import.meta.env.VITE_API_URL}/uploads/${template.image}`)
+    : "https://via.placeholder.com/800x450?text=No+Preview+Available";
+
   const handleAiGeneration = async () => {
     if (!industry.trim()) return;
-    
-    ReactGA.event({
-      category: "Engagement",
-      action: "Use AI Use-Case Generator",
-      label: `Template: ${template.title} | Industry: ${industry}`
-    });
-
     setIsAiLoading(true);
     setAiResponse("");
-    const prompt = `You are a business systems consultant. Template: "${template.title}" Description: "${template.description}" User industry: "${industry}" Give exactly 3 practical bullet points explaining usage.`;
+    const prompt = `Template: "${template.title}" Description: "${template.description}" Industry: "${industry}". Give 3 quick bullet points on how to use it.`;
     const response = await callGemini(prompt);
     setAiResponse(response);
     setIsAiLoading(false);
   };
 
-  // NAYA: Track Main Purchase Click
-  const handleBuyNow = () => {
-    ReactGA.event({
-      category: "Conversion",
-      action: "Click Buy Now From Detail Page",
-      label: template.title
-    });
-    onBuy(template);
-  };
-
-  // 👇 YAHAN CHANGE KIYA HAI 👇
-  const imageUrl = template.image ? `${import.meta.env.VITE_API_URL}/uploads/${template.image}` : "";
-  const categoryName = template.category?.name || "Uncategorized";
-
-  const isSheet = template.productType === 'google_sheet';
-  
-  const featuresList = template.features && template.features.length > 0 
-    ? template.features 
-    : ["Ready to use spreadsheet", "Fully editable"];
-
-  const whoShouldUseList = template.whoShouldUse && template.whoShouldUse.length > 0 
-    ? template.whoShouldUse 
-    : ["Professionals", "Business Owners", "Students"];
-
-  const includedList = [
-    isSheet ? "Google Sheet Link" : "Excel File (.xlsx)",
-    isSheet ? "Instant Drive Access" : "Instant Download",
-    "Lifetime Access",
-    "No hidden subscriptions"
-  ];
-
   return (
-    <div className="min-h-screen bg-slate-50/50 pb-20 selection:bg-indigo-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-8">
-
-        {/* BREADCRUMB */}
-        <div className="flex items-center gap-2 text-sm text-slate-500 mb-8 font-medium">
-          <button onClick={() => onNavigate("home")} className="hover:text-indigo-600 transition-colors">Home</button>
-          <ChevronRight className="w-4 h-4 text-slate-300" />
-          <button onClick={() => onNavigate("templates")} className="hover:text-indigo-600 transition-colors">Templates</button>
-          <ChevronRight className="w-4 h-4 text-slate-300" />
-          <span className="text-slate-800 font-bold line-clamp-1">{template.title}</span>
+    <div className="min-h-screen bg-slate-50/50 pb-24">
+      {/* HEADER SECTION */}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-[40]">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <button 
+            onClick={() => onNavigate("templates")}
+            className="flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold transition-all group"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            Back to Templates
+          </button>
+          <div className="hidden md:flex items-center gap-3 text-sm text-slate-400 font-medium">
+             <span className="hover:text-indigo-600 cursor-pointer" onClick={() => onNavigate("home")}>Home</span>
+             <ChevronRight className="w-4 h-4" />
+             <span className="text-slate-900 font-bold truncate max-w-[200px]">{template.title}</span>
+          </div>
         </div>
+      </div>
 
-        <div className="grid lg:grid-cols-12 gap-12">
-          {/* LEFT SIDE */}
-          <div className="lg:col-span-8 space-y-10">
-            <div>
-               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-indigo-50 text-indigo-600 font-bold text-xs uppercase tracking-wider mb-4 border border-indigo-100">
-                  {isSheet ? <LinkIcon className="w-3.5 h-3.5" /> : <FileSpreadsheet className="w-3.5 h-3.5" />}
-                  {categoryName}
-               </div>
-               <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight mb-4">
-                  {template.title}
-               </h1>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+        <div className="grid lg:grid-cols-12 gap-10">
+          
+          {/* LEFT: CONTENT AREA */}
+          <div className="lg:col-span-8 space-y-8">
+            {/* Title & Badge */}
+            <div className="space-y-4">
+              <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-700 text-xs font-black uppercase tracking-widest border border-indigo-100">
+                <Sparkles className="w-3.5 h-3.5" /> {template.category?.name || "Premium Template"}
+              </span>
+              <h1 className="text-4xl md:text-5xl font-black text-slate-900 leading-tight tracking-tight">
+                {template.title}
+              </h1>
             </div>
 
-            <div className="bg-white rounded-3xl overflow-hidden shadow-sm border border-slate-100 p-2">
-              <img src={imageUrl} alt={template.title} className="w-full aspect-video object-cover rounded-2xl" />
-            </div>
-
-            <div className="bg-white p-8 md:p-10 rounded-3xl shadow-sm border border-slate-100">
-              <h2 className="text-2xl font-bold mb-6 text-slate-900">About this {isSheet ? 'Sheet' : 'Template'}</h2>
-              <p className="text-slate-600 mb-10 whitespace-pre-line leading-relaxed text-lg">{template.description}</p>
-
-              <div className="grid md:grid-cols-2 gap-10">
-                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                  <h3 className="font-extrabold mb-5 flex items-center gap-2 text-slate-900">
-                    <div className="p-1.5 bg-indigo-100 rounded-lg text-indigo-600"><CheckCircle2 className="w-5 h-5" /></div>
-                    Key Features
-                  </h3>
-                  <ul className="space-y-4">
-                    {featuresList.map((f, idx) => (
-                      <li key={idx} className="flex gap-3 text-slate-600 font-medium items-start">
-                        <Check className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-                        <span>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                  <h3 className="font-extrabold mb-5 flex items-center gap-2 text-slate-900">
-                    <div className="p-1.5 bg-purple-100 rounded-lg text-purple-600"><Users className="w-5 h-5" /></div>
-                    Perfect For
-                  </h3>
-                  <ul className="space-y-4">
-                    {whoShouldUseList.map((p, idx) => (
-                      <li key={idx} className="flex gap-3 text-slate-600 font-medium items-start">
-                        <div className="w-1.5 h-1.5 bg-purple-400 rounded-full mt-2.5 shrink-0"></div>
-                        <span>{p}</span>
-                      </li>
-                    ))}
-                  </ul>
+            {/* Main Preview Image */}
+            <div className="group relative bg-white p-2 rounded-[2.5rem] shadow-2xl shadow-indigo-100/50 border border-slate-100 overflow-hidden">
+              <img 
+                src={imageUrl} 
+                alt={template.title} 
+                className="w-full aspect-video object-cover rounded-[2rem] group-hover:scale-[1.01] transition-transform duration-700"
+              />
+              <div className="absolute top-6 left-6 flex gap-2">
+                <div className="px-4 py-2 bg-white/90 backdrop-blur-md rounded-xl shadow-lg flex items-center gap-2 text-xs font-black text-slate-900 uppercase">
+                  {template.productType === 'google_sheet' ? <LinkIcon className="w-4 h-4 text-emerald-500" /> : <FileSpreadsheet className="w-4 h-4 text-indigo-500" />}
+                  {template.productType}
                 </div>
               </div>
             </div>
 
-            {/* AI Generator Section */}
-            <div className="bg-indigo-600 rounded-3xl p-8 md:p-10 text-white shadow-xl relative overflow-hidden">
-                <div className="relative z-10">
-                  <h3 className="text-2xl font-bold mb-4 flex items-center gap-2">
-                    <Sparkles className="w-6 h-6" /> How can this help your business?
-                  </h3>
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <input
-                      type="text"
-                      placeholder="Enter your industry (e.g. Real Estate)"
-                      className="flex-grow px-5 py-3 rounded-xl text-slate-900 focus:outline-none"
-                      value={industry}
-                      onChange={(e) => setIndustry(e.target.value)}
-                    />
-                    <button
-                      onClick={handleAiGeneration}
-                      disabled={isAiLoading}
-                      className="px-8 py-3 bg-white text-indigo-600 font-bold rounded-xl hover:bg-indigo-50 transition-colors flex items-center justify-center gap-2"
-                    >
-                      {isAiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
-                      Generate
-                    </button>
+            {/* Features & Description */}
+            <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 md:p-12 shadow-sm space-y-10">
+              <section>
+                <h3 className="text-2xl font-black text-slate-900 mb-6 flex items-center gap-3">
+                  <div className="w-2 h-8 bg-indigo-600 rounded-full"></div>
+                  Description
+                </h3>
+                <p className="text-slate-600 text-lg leading-relaxed whitespace-pre-line">
+                  {template.description}
+                </p>
+              </section>
+
+              <div className="grid md:grid-cols-2 gap-8 pt-6 border-t border-slate-50">
+                <div className="space-y-4">
+                  <h4 className="font-bold text-slate-900 flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-indigo-600" /> Key Benefits
+                  </h4>
+                  <ul className="space-y-3">
+                    {template.features?.split(',').map((f, i) => (
+                      <li key={i} className="flex gap-2 text-slate-600 text-sm font-medium">
+                        <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" /> {f}
+                      </li>
+                    )) || <li>✓ Ready to use & Customizable</li>}
+                  </ul>
+                </div>
+                <div className="space-y-4">
+                  <h4 className="font-bold text-slate-900 flex items-center gap-2">
+                    <Users className="w-5 h-5 text-indigo-600" /> Best Suited For
+                  </h4>
+                  <p className="text-slate-500 text-sm leading-relaxed italic">
+                    {template.whoShouldUse || "Designed for professionals looking to optimize their workflow."}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* AI GEN BOX */}
+            <div className="bg-gradient-to-br from-slate-900 to-indigo-950 rounded-[2.5rem] p-8 md:p-12 text-white shadow-2xl relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px] -mr-32 -mt-32"></div>
+              <div className="relative z-10">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-indigo-500/20 rounded-lg backdrop-blur-md">
+                    <Zap className="w-6 h-6 text-indigo-400" />
                   </div>
-                  {aiResponse && (
-                    <div className="mt-6 p-6 bg-white/10 rounded-2xl border border-white/20 backdrop-blur-sm">
-                      <div className="whitespace-pre-line leading-relaxed">{aiResponse}</div>
-                    </div>
-                  )}
+                  <h3 className="text-2xl font-bold">Business Use-Case Generator</h3>
                 </div>
+                <p className="text-slate-400 mb-8 max-w-xl font-medium">Enter your industry and let AI explain how this {template.productType} can solve your specific problems.</p>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input 
+                    type="text" 
+                    value={industry}
+                    onChange={(e)=>setIndustry(e.target.value)}
+                    placeholder="e.g. E-commerce, Real Estate..." 
+                    className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-white placeholder-slate-500 transition-all"
+                  />
+                  <button 
+                    onClick={handleAiGeneration}
+                    disabled={isAiLoading}
+                    className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-8 py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/20 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    {isAiLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Generate Now"}
+                  </button>
+                </div>
+                {aiResponse && (
+                  <div className="mt-8 p-6 bg-white/5 border border-white/10 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-500">
+                    <div className="text-indigo-300 font-bold text-sm mb-3 uppercase tracking-tighter">AI Recommended Usage:</div>
+                    <div className="text-slate-300 whitespace-pre-line leading-relaxed italic font-medium">"{aiResponse}"</div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* RIGHT SIDE (CHECKOUT) */}
+          {/* RIGHT: PRICING CARD */}
           <div className="lg:col-span-4">
-            <div className="bg-white p-8 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-slate-200 sticky top-24">
-              <h3 className="text-lg font-bold text-slate-500 mb-2">Lifetime Access</h3>
-              <div className="flex items-end gap-2 mb-6 border-b border-slate-100 pb-6">
-                <span className="text-5xl font-extrabold text-slate-900 tracking-tight">₹{template.price}</span>
-                <span className="text-slate-400 font-medium mb-1">/ one-time</span>
-              </div>
-
-              <ul className="space-y-4 mb-8">
-                {includedList.map((item, idx) => (
-                  <li key={idx} className="flex items-center gap-3 text-slate-600 font-medium">
-                    <div className="p-1 bg-emerald-50 rounded-full"><Check className="w-4 h-4 text-emerald-600" /></div>
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <button
-                onClick={handleBuyNow}
-                className="w-full py-4 bg-gradient-to-r from-indigo-600 to-violet-600 text-white font-extrabold rounded-xl flex justify-center items-center gap-2 transition-all shadow-lg hover:-translate-y-1 mb-4"
-              >
-                <ShoppingCart className="w-5 h-5" /> Buy Now
-              </button>
-
-              <div className="flex items-center justify-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-wider">
-                <Lock className="w-4 h-4" /> Secure Razorpay Checkout
-              </div>
-
-              <div className="mt-8 p-4 bg-slate-50 rounded-xl border border-slate-100 flex gap-4">
-                <ShieldCheck className="w-8 h-8 text-indigo-400 shrink-0" />
-                <div>
-                  <h4 className="font-bold text-slate-900 text-sm mb-1">Quality Guaranteed</h4>
-                  <p className="text-xs text-slate-500">Verified by experts. Works on {isSheet ? 'Google Sheets' : 'Excel'}.</p>
+            <div className="sticky top-24 space-y-6">
+              <div className="bg-white rounded-[2.5rem] p-8 shadow-2xl shadow-slate-200/50 border border-slate-200">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <p className="text-slate-400 font-bold text-xs uppercase tracking-widest mb-1">One-time payment</p>
+                    <h2 className="text-5xl font-black text-slate-900">₹{template.price}</h2>
+                  </div>
+                  <div className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-black italic shadow-sm">-70% OFF</div>
                 </div>
+
+                <div className="space-y-4 mb-8">
+                  {[
+                    {text: template.productType === 'google_sheet' ? "Instant Drive Link" : "Direct Excel Download", icon: <Check className="w-4 h-4 text-emerald-500" />},
+                    {text: "Lifetime Free Updates", icon: <Check className="w-4 h-4 text-emerald-500" />},
+                    {text: "Unlimited Re-use", icon: <Check className="w-4 h-4 text-emerald-500" />},
+                    {text: "Secure Payment", icon: <ShieldCheck className="w-4 h-4 text-indigo-500" />}
+                  ].map((item, i) => (
+                    <div key={i} className="flex items-center gap-3 text-slate-600 font-bold text-sm">
+                      <div className="p-1 bg-slate-50 border border-slate-100 rounded-full">{item.icon}</div>
+                      {item.text}
+                    </div>
+                  ))}
+                </div>
+
+                <button 
+                  onClick={() => onBuy(template)}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-5 rounded-2xl flex items-center justify-center gap-3 shadow-xl shadow-indigo-100 transition-all hover:-translate-y-1 active:scale-95 text-lg"
+                >
+                  <ShoppingCart className="w-6 h-6" /> GET ACCESS NOW
+                </button>
+                
+                <p className="text-center text-slate-400 text-xs mt-6 flex items-center justify-center gap-2">
+                  <Lock className="w-3.5 h-3.5" /> 100% Secure Transaction via Razorpay
+                </p>
+              </div>
+
+              {/* Trust Badge */}
+              <div className="bg-indigo-50 border border-indigo-100 rounded-2xl p-6 flex items-start gap-4">
+                 <div className="p-3 bg-white rounded-xl shadow-sm text-indigo-600"><ShieldCheck className="w-6 h-6" /></div>
+                 <div>
+                   <h4 className="font-black text-indigo-900 text-sm">Satisfaction Guarantee</h4>
+                   <p className="text-indigo-700/60 text-xs font-medium mt-1 leading-relaxed">If the file is corrupt or not as described, our support will resolve it within 24 hours.</p>
+                 </div>
               </div>
             </div>
           </div>
+          
         </div>
       </div>
     </div>
