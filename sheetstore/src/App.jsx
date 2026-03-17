@@ -33,10 +33,17 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "https://sheetstore-backend
 
 export default function App() {
   // ==============================
-  // 1️⃣ ROUTING LOGIC
+  // 1️⃣ SMART ROUTING LOGIC (UPDATED FOR VERCEL FIX)
   // ==============================
   const [route, setRoute] = useState(() => {
     const path = window.location.pathname;
+    const searchParams = new URLSearchParams(window.location.search);
+    
+    // 🔥 JADUU YAHAN HAI: Agar URL mein orderId hai, toh seedha Success Page kholo!
+    if (searchParams.has("orderId")) {
+      return { path: "success", params: { orderId: searchParams.get("orderId") } };
+    }
+
     if (path === "/admin") return { path: "admin", params: {} };
     return { path: "home", params: {} };
   });
@@ -131,11 +138,15 @@ export default function App() {
 
             if (data.success) {
               if (GA_ID) ReactGA.event({ category: "Sales", action: "Payment Success", label: template.title });
-              setToastConfig({ isVisible: true, message: "Payment Successful!" });
-              navigate("success", { orderId: response.razorpay_order_id });
+              
+              // 🔥 YAHAN CHANGE KIYA HAI: Safe URL Redirect taaki screen wapas home par na jaye
+              window.location.href = `/?orderId=${response.razorpay_order_id}`;
+            } else {
+              alert("Payment verification failed. Please contact support.");
             }
           } catch (err) {
             console.error("Verification failed", err);
+            alert("Payment verification server error.");
           }
         },
         theme: { color: "#4f46e5" }
