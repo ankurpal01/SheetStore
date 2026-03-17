@@ -10,6 +10,9 @@ require("dotenv").config();
 const cloudinary = require("cloudinary").v2;
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
+// 🔥 GEMINI AI IMPORT 🔥
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+
 const Category = require("./models/Category");
 const Template = require("./models/Template");
 const Order = require("./models/Order");
@@ -33,7 +36,6 @@ app.use(cors({
 app.use(express.json());
 
 // ================= 3. CLOUDINARY MULTER STORAGE =================
-// Ye automatically image ko images folder me aur excel ko raw folder me daalega
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
@@ -46,13 +48,12 @@ const storage = new CloudinaryStorage({
     } else if (file.fieldname === "file") {
       return {
         folder: "sheetstore/files",
-        resource_type: "raw", // Raw is used for Excel, Zip, PDF etc.
+        resource_type: "raw", 
         format: file.originalname.split('.').pop() 
       };
     }
   }
 });
-
 const upload = multer({ storage });
 
 // ================= 4. DATABASE CONNECTION =================
@@ -60,13 +61,18 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB Connected Successfully"))
   .catch(err => console.error("Mongo Connection Error:", err));
 
-// ================= 5. RAZORPAY CONFIG =================
+// ================= 5. RAZORPAY CONFIG (SMART FALLBACK) =================
+const razorpaySecretKey = process.env.RAZORPAY_SECRET || process.env.RAZORPAY_KEY_SECRET;
+
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_SECRET
+  key_secret: razorpaySecretKey
 });
 
-// ================= CATEGORY ROUTES =================
+// ================= 6. GEMINI AI CONFIG =================
+const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
+
+// ================= CATEGORY & TEMPLATE ROUTES =================
 app.post("/admin/category", async (req, res) => {
   try {
     const { name } = req.body;
@@ -99,14 +105,12 @@ app.delete("/admin/category/:id", async (req, res) => {
   }
 });
 
-// ================= TEMPLATE ROUTES (CLOUD HYBRID) =================
 app.post("/admin/template", upload.fields([
   { name: "image", maxCount: 1 },
   { name: "file", maxCount: 1 }
 ]), async (req, res) => {
   try {
     const { title, description, price, category, features, whoShouldUse, productType, sheetUrl } = req.body;
-
     if (!req.files || !req.files['image']) return res.status(400).json({ error: "Product image is required" });
 
     const featuresArray = features ? features.split(",").map(f => f.trim()).filter(f => f) : [];
@@ -116,7 +120,7 @@ app.post("/admin/template", upload.fields([
       title, description, price, category,
       features: featuresArray,
       whoShouldUse: whoShouldUseArray,
-      image: req.files['image'][0].path, // 🔥 Ab yahan Cloudinary ka permanent link aayega!
+      image: req.files['image'][0].path, 
       productType: productType || "excel"
     };
 
@@ -125,7 +129,7 @@ app.post("/admin/template", upload.fields([
       newTemplateData.sheetUrl = sheetUrl;
     } else {
       if (!req.files['file']) return res.status(400).json({ error: "Excel/Zip file is required" });
-      newTemplateData.fileName = req.files['file'][0].path; // 🔥 File ka permanent Cloudinary link
+      newTemplateData.fileName = req.files['file'][0].path; 
     }
 
     const newTemplate = await Template.create(newTemplateData);
@@ -149,8 +153,6 @@ app.delete("/admin/template/:id", async (req, res) => {
   try {
     const template = await Template.findById(req.params.id);
     if (!template) return res.status(404).json({ error: "Template not found" });
-
-    // Local file system delete logic removed kyunki files ab Cloud par hain
     await Template.findByIdAndDelete(req.params.id);
     res.json({ message: "Product deleted from database" });
   } catch (err) {
@@ -158,23 +160,34 @@ app.delete("/admin/template/:id", async (req, res) => {
   }
 });
 
-// ================= PAYMENT ROUTES =================
+// ================= PAYMENT ROUTES (FIXED ERROR LOGGING) =================
 app.post("/create-order", async (req, res) => {
   try {
+    console.log("Create Order Request:", req.body);
     const { amount, templateId, templateName } = req.body;
+    
+    if (!process.env.RAZORPAY_KEY_ID || !razorpaySecretKey) {
+      console.error("RAZORPAY KEYS MISSING IN BACKEND!");
+      return res.status(500).json({ error: "Payment Gateway not configured" });
+    }
+
     const options = {
-      amount: amount * 100,
+      amount: Math.round(Number(amount) * 100), // Safe parsing
       currency: "INR",
       receipt: "rcpt_" + Date.now()
     };
+    
     const razorpayOrder = await razorpay.orders.create(options);
+    console.log("Order created:", razorpayOrder.id);
+    
     await Order.create({
       razorpay_order_id: razorpayOrder.id,
       templateId, templateName, amount, status: "pending"
     });
     res.json(razorpayOrder);
   } catch (err) {
-    res.status(500).json({ error: "Order creation failed" });
+    console.error("Razorpay Create Order Error:", err);
+    res.status(500).json({ error: "Order creation failed", details: err.message });
   }
 });
 
@@ -183,11 +196,11 @@ app.post("/verify-payment", async (req, res) => {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_SECRET)
+      .createHmac("sha256", razorpaySecretKey)
       .update(body)
       .digest("hex");
 
-    if (expectedSignature !== razorpay_signature) return res.status(400).json({ success: false });
+    if (expectedSignature !== razorpay_signature) return res.status(400).json({ success: false, error: "Invalid Signature" });
 
     const order = await Order.findOne({ razorpay_order_id });
     if (!order) return res.status(404).json({ error: "Order not found" });
@@ -198,6 +211,7 @@ app.post("/verify-payment", async (req, res) => {
     await order.save();
     res.json({ success: true });
   } catch (err) {
+    console.error("Verification Error:", err);
     res.status(500).json({ error: "Verification failed" });
   }
 });
@@ -219,17 +233,27 @@ app.get("/download/:templateId", async (req, res) => {
     if (!template || template.productType === 'google_sheet' || !template.fileName) {
        return res.status(400).json({ error: "Invalid download request" });
     }
-    
-    // 🔥 Ab fileName me Cloudinary ka link hai, toh hum user ko wahan redirect kar denge. 
-    // Isse browser file automatically download kar lega.
     res.redirect(template.fileName);
-
   } catch (err) {
     res.status(500).json({ error: "Download failed" });
   }
 });
 
-// ================= ADMIN LOGIN =================
+// ================= ADMIN DASHBOARD & LOGIN =================
+app.get("/admin/stats", async (req, res) => {
+  try {
+    const totalOrdersCount = await Order.countDocuments({ status: "paid" });
+    const totalTemplates = await Template.countDocuments();
+    const orders = await Order.find({ status: "paid" });
+    const totalRevenue = orders.reduce((sum, order) => sum + (order.amount || 0), 0);
+
+    res.json({ totalRevenue, totalOrders: totalOrdersCount, totalTemplates });
+  } catch (err) {
+    console.error("Stats Error:", err);
+    res.status(500).json({ error: "Failed to fetch stats" });
+  }
+});
+
 app.post("/admin/login", (req, res) => {
   const { username, password } = req.body;
   const ADMIN_USER = process.env.ADMIN_USER || "Ankurpal";
@@ -242,7 +266,33 @@ app.post("/admin/login", (req, res) => {
   }
 });
 
-// ================= 6. SERVER START =================
+app.put("/admin/reset-password", async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  const currentPass = process.env.ADMIN_PASS || "Ankur001*";
+  
+  if (oldPassword !== currentPass) {
+    return res.status(401).json({ error: "Old password is wrong" });
+  }
+  process.env.ADMIN_PASS = newPassword; 
+  res.json({ success: true, message: "Password updated for this session" });
+});
+
+// ================= GEMINI AI ROUTE =================
+app.post("/api/ai-usecase", async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!genAI) return res.status(500).json({ error: "AI Key missing in Backend" });
+    
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(prompt);
+    res.json({ text: result.response.text() });
+  } catch (error) {
+    console.error("AI Error:", error);
+    res.status(500).json({ error: "AI is unavailable right now" });
+  }
+});
+
+// ================= 7. SERVER START =================
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
