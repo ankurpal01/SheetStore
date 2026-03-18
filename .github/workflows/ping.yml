@@ -1,0 +1,16 @@
+name: Keep Render Awake
+
+on:
+  schedule:
+    # Har 10 minute mein automatically chalega (Render 15 min mein sota hai)
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Isse aap chahein toh GitHub se manually bhi chala sakte hain
+
+jobs:
+  ping-server:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Ping to Backend
+        run: |
+          curl -s https://sheetstore-backend.onrender.com/templates > /dev/null
+          echo "Server ko jaga diya gaya hai! 🚀"
