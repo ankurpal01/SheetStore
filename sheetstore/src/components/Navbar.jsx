@@ -20,19 +20,21 @@ export default function Navbar({ onNavigate, currentPath }) {
         <div className="flex h-20 items-center justify-between">
           
           {/* ================= 1. CUSTOM PNG LOGO ================= */}
+         {/* ================= 1. CUSTOM PNG LOGO (BADA KAR DIYA HAI) ================= */}
           <button 
             onClick={() => {
               onNavigate("home");
               setIsMobileMenuOpen(false);
             }} 
-            className="flex items-center gap-3 group outline-none"
+            className="flex items-center gap-2.5 group outline-none"
           >
-            {/* Yahan aapki PNG image aayegi (public folder se) */}
-            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-sm border border-slate-100 bg-white flex items-center justify-center group-hover:shadow-md group-hover:scale-105 transition-all duration-300">
+            {/* Dabbe ka size w-10 se w-14 kar diya hai */}
+            <div className="w-12 h-12 md:w-14 md:h-14 rounded-xl overflow-hidden shadow-sm border border-slate-100 bg-white flex items-center justify-center group-hover:shadow-md group-hover:scale-105 transition-all duration-300">
               <img 
-                src="/logo.png" // Apni image ka naam yahan check kar lena (jaise logo.png)
+                src="/logo.png" // Agar aapne logo ka naam kuch aur rakha hai toh wo daal dena
                 alt="SheetStore Logo" 
-                className="w-7 h-7 object-contain"
+                // Image ko bada karne ke liye w-full h-full aur object-cover laga diya hai
+                className="w-full h-full object-cover scale-110" 
               />
             </div>
             <span className="text-2xl font-black text-slate-900 tracking-tight group-hover:text-indigo-600 transition-colors duration-300">
