@@ -5,6 +5,25 @@ import {
   FileSpreadsheet, RotateCcw, PiggyBank, Receipt
 } from "lucide-react";
 
+// ── Shared UI components — defined OUTSIDE to prevent focus loss on re-render ──
+const InputField = ({ label, value, onChange, placeholder, type = "number" }) => (
+  <div>
+    <label className="ft-label">{label}</label>
+    <input type={type} value={value} onChange={onChange} placeholder={placeholder} className="ft-input" />
+  </div>
+);
+
+const ResultCard = ({ children }) => (
+  <div className="ft-result-card">{children}</div>
+);
+
+const ActionRow = ({ onReset, onCalc, calcLabel = "Calculate" }) => (
+  <div className="ft-action-row">
+    <button onClick={onReset} className="ft-btn-reset"><RotateCcw size={14} /> Reset</button>
+    <button onClick={onCalc} className="ft-btn-calc">{calcLabel}</button>
+  </div>
+);
+
 export default function FreeToolsPage({ onNavigate }) {
   const [activeTool, setActiveTool] = useState("emi");
 
@@ -235,25 +254,6 @@ export default function FreeToolsPage({ onNavigate }) {
     setFdData(initFd); setCurrData(initCurr); setUnitData(initUnit); setBmiData(initBmi);
     setInvData(initInv);
   };
-
-  // ── Shared UI helpers ──
-  const InputField = ({ label, value, onChange, placeholder, type = "number" }) => (
-    <div>
-      <label className="ft-label">{label}</label>
-      <input type={type} value={value} onChange={onChange} placeholder={placeholder} className="ft-input" />
-    </div>
-  );
-
-  const ResultCard = ({ children }) => (
-    <div className="ft-result-card">{children}</div>
-  );
-
-  const ActionRow = ({ onReset, onCalc, calcLabel = "Calculate" }) => (
-    <div className="ft-action-row">
-      <button onClick={onReset} className="ft-btn-reset"><RotateCcw size={14} /> Reset</button>
-      <button onClick={onCalc} className="ft-btn-calc">{calcLabel}</button>
-    </div>
-  );
 
   return (
     <>
