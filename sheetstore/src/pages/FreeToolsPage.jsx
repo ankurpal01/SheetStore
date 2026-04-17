@@ -215,8 +215,8 @@ export default function FreeToolsPage({ onNavigate }) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 pt-28 pb-32">
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-slate-50 pt-28 pb-32 print:pt-0 print:pb-0">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 print:px-0">
 
         {/* HERO */}
         <div className="text-center max-w-3xl mx-auto mb-16 print:hidden">

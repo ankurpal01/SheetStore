@@ -186,7 +186,7 @@ export default function InvoiceGenerator() {
       </div>
 
       {/* RIGHT PANE - LIVE PREVIEW */}
-      <div className="w-full flex flex-col gap-6 print:w-full print:block mt-8">
+      <div className="w-full flex flex-col gap-6 print:w-full print:block mt-8 print:mt-0 print:gap-0">
         
         {/* Action Bar (Hidden during print) */}
         <div className="flex flex-col sm:flex-row items-center justify-between bg-white rounded-2xl p-4 shadow-sm border border-slate-200 print:hidden gap-4">
@@ -201,11 +201,11 @@ export default function InvoiceGenerator() {
         {/* The Invoice Document */}
         <div className="bg-white rounded-3xl shadow-2xl overflow-hidden print:shadow-none print:rounded-none">
           {/* Header Strip */}
-          <div className="h-4 w-full bg-gradient-to-r from-indigo-600 to-violet-600"></div>
+          <div className="h-4 w-full bg-gradient-to-r from-indigo-600 to-violet-600 print:h-2"></div>
           
-          <div className="p-8 sm:p-12">
+          <div className="p-8 sm:p-12 print:p-6">
             {/* Top Section */}
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-8 mb-16">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-8 mb-16 print:mb-8 print:gap-4">
               <div>
                 <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase mb-2">Invoice</h1>
                 <p className="text-slate-500 font-medium mb-1">#{data.invoiceNumber || '---'}</p>
@@ -217,7 +217,7 @@ export default function InvoiceGenerator() {
             </div>
 
             {/* Bill To & Details */}
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-8 mb-16 pb-8 border-b border-slate-100">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-8 mb-16 pb-8 border-b border-slate-100 print:mb-8 print:pb-4 print:gap-4">
               <div>
                 <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Bill To</h3>
                 <h4 className="text-lg font-bold text-slate-900 mb-1">{data.clientName || 'Client Name'}</h4>
@@ -236,7 +236,7 @@ export default function InvoiceGenerator() {
             </div>
 
             {/* Table */}
-            <div className="mb-12">
+            <div className="mb-12 print:mb-6">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b-2 border-slate-900 text-sm font-black text-slate-900 uppercase">
@@ -263,8 +263,8 @@ export default function InvoiceGenerator() {
             </div>
 
             {/* Totals Section */}
-            <div className="flex flex-col sm:flex-row justify-end mb-16">
-              <div className="w-full sm:w-80 space-y-4">
+            <div className="flex flex-col sm:flex-row justify-end mb-16 print:mb-8">
+              <div className="w-full sm:w-80 space-y-4 print:space-y-2">
                 <div className="flex justify-between items-center text-sm font-bold text-slate-500">
                   <span>Subtotal</span>
                   <span>{data.currency}{subtotal.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
@@ -289,7 +289,7 @@ export default function InvoiceGenerator() {
             </div>
 
             {/* Notes & Terms */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-sm text-slate-500 pt-8 border-t border-slate-100">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-sm text-slate-500 pt-8 border-t border-slate-100 print:pt-4 print:gap-4">
               <div>
                 <h3 className="font-bold text-slate-900 mb-2 uppercase tracking-wider text-xs">Notes</h3>
                 <p className="whitespace-pre-wrap leading-relaxed">{data.notes || '---'}</p>
