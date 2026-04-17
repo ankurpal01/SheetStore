@@ -191,7 +191,7 @@ export default function SuccessPage({ orderId, onNavigate }) {
                   </a>
                 ) : (
                   // 👇 3. YAHAN CHANGE KIYA HAI 👇
-                  <a href={`${import.meta.env.VITE_API_URL}/download/${template._id}`} className="w-full flex items-center justify-center gap-3 bg-indigo-600 text-white px-8 py-4 rounded-xl font-black shadow-lg hover:-translate-y-1 transition-all">
+                  <a href={`${import.meta.env.VITE_API_URL}/download/${template._id}?orderId=${order.razorpay_order_id}`} className="w-full flex items-center justify-center gap-3 bg-indigo-600 text-white px-8 py-4 rounded-xl font-black shadow-lg hover:-translate-y-1 transition-all">
                     <Download className="w-6 h-6" /> Download Excel File
                   </a>
                 )

@@ -4,6 +4,8 @@ const cors = require("cors");
 const multer = require("multer");
 const Razorpay = require("razorpay");
 const crypto = require("crypto");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
 // 🔥 CLOUDINARY IMPORTS 🔥
@@ -16,6 +18,7 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Category = require("./models/Category");
 const Template = require("./models/Template");
 const Order = require("./models/Order");
+const Admin = require("./models/Admin");
 
 const app = express();
 
@@ -26,9 +29,30 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+const extractPublicId = (url) => {
+  if (!url) return null;
+  const parts = url.split('/');
+  const uploadIndex = parts.indexOf('upload');
+  if (uploadIndex === -1) return null;
+  const publicIdWithExt = parts.slice(uploadIndex + 2).join('/');
+  return publicIdWithExt.split('.')[0];
+};
+
+const deleteFromCloudinary = async (url, resourceType = 'image') => {
+  const publicId = extractPublicId(url);
+  if (publicId) {
+    try {
+      await cloudinary.uploader.destroy(publicId, { resource_type: resourceType });
+    } catch (err) {
+      console.error("Cloudinary delete error:", err);
+    }
+  }
+};
+
 // ================= 2. PRODUCTION CORS CONFIG =================
+const allowedOrigins = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL, "http://localhost:5173"] : "*";
 app.use(cors({
-  origin: "*", 
+  origin: allowedOrigins, 
   methods: ["GET", "POST", "PUT", "DELETE"],
   credentials: true
 }));
@@ -58,10 +82,21 @@ const upload = multer({ storage });
 
 // ================= 4. DATABASE CONNECTION =================
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB Connected Successfully"))
+  .then(async () => {
+    console.log("MongoDB Connected Successfully");
+    // Seed default admin if none exists
+    const adminExists = await Admin.findOne();
+    if (!adminExists) {
+      const username = process.env.ADMIN_USER || "admin";
+      const password = process.env.ADMIN_PASS || "admin123";
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await Admin.create({ username, password: hashedPassword });
+      console.log("Default admin created successfully.");
+    }
+  })
   .catch(err => console.error("Mongo Connection Error:", err));
 
-// ================= 5. RAZORPAY CONFIG (SMART FALLBACK) =================
+// ================= 5. RAZORPAY CONFIG =================
 const razorpaySecretKey = process.env.RAZORPAY_SECRET || process.env.RAZORPAY_KEY_SECRET;
 
 const razorpay = new Razorpay({
@@ -71,9 +106,26 @@ const razorpay = new Razorpay({
 
 // ================= 6. GEMINI AI CONFIG =================
 const genAI = process.env.GEMINI_API_KEY ? new GoogleGenerativeAI(process.env.GEMINI_API_KEY) : null;
+const JWT_SECRET = process.env.JWT_SECRET || "sheetstore_super_secret_key_123!";
+
+// ================= AUTH MIDDLEWARE =================
+const authenticateAdmin = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Access denied. No token provided." });
+  }
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.adminId = decoded.id;
+    next();
+  } catch (ex) {
+    res.status(400).json({ error: "Invalid token." });
+  }
+};
 
 // ================= CATEGORY & TEMPLATE ROUTES =================
-app.post("/admin/category", async (req, res) => {
+app.post("/admin/category", authenticateAdmin, async (req, res) => {
   try {
     const { name } = req.body;
     if (!name) return res.status(400).json({ error: "Name is required" });
@@ -96,7 +148,7 @@ app.get("/categories", async (req, res) => {
   }
 });
 
-app.delete("/admin/category/:id", async (req, res) => {
+app.delete("/admin/category/:id", authenticateAdmin, async (req, res) => {
   try {
     await Category.findByIdAndDelete(req.params.id);
     res.json({ message: "Category deleted successfully" });
@@ -105,7 +157,7 @@ app.delete("/admin/category/:id", async (req, res) => {
   }
 });
 
-app.post("/admin/template", upload.fields([
+app.post("/admin/template", authenticateAdmin, upload.fields([
   { name: "image", maxCount: 1 },
   { name: "file", maxCount: 1 }
 ]), async (req, res) => {
@@ -149,10 +201,16 @@ app.get("/templates", async (req, res) => {
   }
 });
 
-app.delete("/admin/template/:id", async (req, res) => {
+app.delete("/admin/template/:id", authenticateAdmin, async (req, res) => {
   try {
     const template = await Template.findById(req.params.id);
     if (!template) return res.status(404).json({ error: "Template not found" });
+    
+    await deleteFromCloudinary(template.image, 'image');
+    if (template.productType === 'excel' && template.fileName) {
+      await deleteFromCloudinary(template.fileName, 'raw');
+    }
+
     await Template.findByIdAndDelete(req.params.id);
     res.json({ message: "Product deleted from database" });
   } catch (err) {
@@ -160,25 +218,22 @@ app.delete("/admin/template/:id", async (req, res) => {
   }
 });
 
-// ================= PAYMENT ROUTES (FIXED ERROR LOGGING) =================
+// ================= PAYMENT ROUTES =================
 app.post("/create-order", async (req, res) => {
   try {
-    console.log("Create Order Request:", req.body);
     const { amount, templateId, templateName } = req.body;
     
     if (!process.env.RAZORPAY_KEY_ID || !razorpaySecretKey) {
-      console.error("RAZORPAY KEYS MISSING IN BACKEND!");
       return res.status(500).json({ error: "Payment Gateway not configured" });
     }
 
     const options = {
-      amount: Math.round(Number(amount) * 100), // Safe parsing
+      amount: Math.round(Number(amount) * 100), 
       currency: "INR",
       receipt: "rcpt_" + Date.now()
     };
     
     const razorpayOrder = await razorpay.orders.create(options);
-    console.log("Order created:", razorpayOrder.id);
     
     await Order.create({
       razorpay_order_id: razorpayOrder.id,
@@ -186,7 +241,6 @@ app.post("/create-order", async (req, res) => {
     });
     res.json(razorpayOrder);
   } catch (err) {
-    console.error("Razorpay Create Order Error:", err);
     res.status(500).json({ error: "Order creation failed", details: err.message });
   }
 });
@@ -226,9 +280,19 @@ app.get("/order/:orderId", async (req, res) => {
   }
 });
 
-// ================= DOWNLOAD / ACCESS ROUTE =================
+// ================= SECURE DOWNLOAD ROUTE =================
 app.get("/download/:templateId", async (req, res) => {
   try {
+    const { orderId } = req.query;
+    if (!orderId) {
+      return res.status(401).json({ error: "Unauthorized access. Order ID is required." });
+    }
+
+    const order = await Order.findOne({ razorpay_order_id: orderId });
+    if (!order || order.status !== "paid" || order.templateId !== req.params.templateId) {
+      return res.status(401).json({ error: "Unauthorized access. Invalid or unpaid order." });
+    }
+
     const template = await Template.findById(req.params.templateId);
     if (!template || template.productType === 'google_sheet' || !template.fileName) {
        return res.status(400).json({ error: "Invalid download request" });
@@ -240,7 +304,7 @@ app.get("/download/:templateId", async (req, res) => {
 });
 
 // ================= ADMIN DASHBOARD & LOGIN =================
-app.get("/admin/stats", async (req, res) => {
+app.get("/admin/stats", authenticateAdmin, async (req, res) => {
   try {
     const totalOrdersCount = await Order.countDocuments({ status: "paid" });
     const totalTemplates = await Template.countDocuments();
@@ -249,32 +313,42 @@ app.get("/admin/stats", async (req, res) => {
 
     res.json({ totalRevenue, totalOrders: totalOrdersCount, totalTemplates });
   } catch (err) {
-    console.error("Stats Error:", err);
     res.status(500).json({ error: "Failed to fetch stats" });
   }
 });
 
-app.post("/admin/login", (req, res) => {
-  const { username, password } = req.body;
-  const ADMIN_USER = process.env.ADMIN_USER || "Ankurpal";
-  const ADMIN_PASS = process.env.ADMIN_PASS || "Ankur001*";
-
-  if (username === ADMIN_USER && password === ADMIN_PASS) {
-    res.json({ success: true, token: "admin-secret-token" });
-  } else {
-    res.status(401).json({ success: false, error: "Invalid credentials" });
+app.post("/admin/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const admin = await Admin.findOne({ username });
+    if (!admin) return res.status(401).json({ success: false, error: "Invalid credentials" });
+    
+    const isMatch = await bcrypt.compare(password, admin.password);
+    if (!isMatch) return res.status(401).json({ success: false, error: "Invalid credentials" });
+    
+    const token = jwt.sign({ id: admin._id, username: admin.username }, JWT_SECRET, { expiresIn: "24h" });
+    res.json({ success: true, token });
+  } catch (err) {
+    res.status(500).json({ success: false, error: "Login failed" });
   }
 });
 
-app.put("/admin/reset-password", async (req, res) => {
+app.put("/admin/reset-password", authenticateAdmin, async (req, res) => {
   const { oldPassword, newPassword } = req.body;
-  const currentPass = process.env.ADMIN_PASS || "Ankur001*";
-  
-  if (oldPassword !== currentPass) {
-    return res.status(401).json({ error: "Old password is wrong" });
+  try {
+    const admin = await Admin.findById(req.adminId);
+    if (!admin) return res.status(404).json({ error: "Admin not found" });
+
+    const isMatch = await bcrypt.compare(oldPassword, admin.password);
+    if (!isMatch) return res.status(401).json({ error: "Old password is wrong" });
+
+    admin.password = await bcrypt.hash(newPassword, 10);
+    await admin.save();
+    
+    res.json({ success: true, message: "Password updated successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to update password" });
   }
-  process.env.ADMIN_PASS = newPassword; 
-  res.json({ success: true, message: "Password updated for this session" });
 });
 
 // ================= GEMINI AI ROUTE =================

@@ -38,9 +38,13 @@ export default function AdminPage() {
   const imageInputRef = useRef(null);
   const fileInputRef = useRef(null);
 
+  const getAuthHeader = () => {
+    return { "Authorization": `Bearer ${localStorage.getItem("adminToken")}` };
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("adminToken");
-    if (token === "admin-secret-token") setIsAuthenticated(true);
+    if (token) setIsAuthenticated(true);
   }, []);
 
   useEffect(() => {
@@ -53,7 +57,8 @@ export default function AdminPage() {
 
   const fetchStats = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/stats`);
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/stats`, { headers: getAuthHeader() });
+      if (res.status === 401) return handleLogout();
       const data = await res.json();
       setStats(data);
     } catch (err) { console.error(err); }
@@ -105,12 +110,16 @@ export default function AdminPage() {
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/category`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getAuthHeader() },
         body: JSON.stringify({ name: categoryName })
       });
+      if (res.status === 401) return handleLogout();
       if (res.ok) { 
         setCategoryName(""); 
         fetchCategories(); 
+      } else {
+        const err = await res.json();
+        alert(err.error || "Failed to add category");
       }
     } catch (err) {
       alert("Failed to add category");
@@ -122,9 +131,11 @@ export default function AdminPage() {
   const handleDeleteCategory = async (id) => {
     if (!window.confirm("Delete this category?")) return;
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/admin/category/${id}`, { 
-        method: "DELETE" 
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/category/${id}`, { 
+        method: "DELETE",
+        headers: getAuthHeader()
       });
+      if (res.status === 401) return handleLogout();
       fetchCategories();
     } catch (err) {
       alert("Failed to delete category");
@@ -149,11 +160,7 @@ export default function AdminPage() {
     try {
       const formData = new FormData();
       
-      // Convert features to array
-      const featuresArray = features
-        .split(',')
-        .map(f => f.trim())
-        .filter(f => f !== "");
+      const featuresArray = features.split(',').map(f => f.trim()).filter(f => f !== "");
       
       formData.append("title", title);
       formData.append("description", description);
@@ -172,31 +179,22 @@ export default function AdminPage() {
 
       const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/template`, { 
         method: "POST", 
+        headers: { "Authorization": `Bearer ${localStorage.getItem("adminToken")}` },
         body: formData 
       });
       
+      if (res.status === 401) return handleLogout();
+
       if (res.ok) {
         alert("✅ Template Published Successfully!");
-        
-        // Reset form
-        setTitle("");
-        setDescription("");
-        setPrice("");
-        setFeatures("");
-        setWhoShouldUse("");
-        setImage(null);
-        setFile(null);
-        setSheetUrl("");
-        setSelectedCategory("");
-        
+        setTitle(""); setDescription(""); setPrice(""); setFeatures(""); setWhoShouldUse("");
+        setImage(null); setFile(null); setSheetUrl(""); setSelectedCategory("");
         if (imageInputRef.current) imageInputRef.current.value = "";
         if (fileInputRef.current) fileInputRef.current.value = "";
-        
-        fetchTemplates();
-        fetchStats();
+        fetchTemplates(); fetchStats();
       } else {
         const error = await res.json();
-        alert(error.message || "Failed to publish template");
+        alert(error.error || "Failed to publish template");
       }
     } catch (err) {
       alert("Error uploading template. Check your connection.");
@@ -208,9 +206,11 @@ export default function AdminPage() {
   const handleDeleteTemplate = async (id) => {
     if (!window.confirm("Delete this template? This cannot be undone.")) return;
     try {
-      await fetch(`${import.meta.env.VITE_API_URL}/admin/template/${id}`, { 
-        method: "DELETE" 
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/template/${id}`, { 
+        method: "DELETE",
+        headers: getAuthHeader()
       });
+      if (res.status === 401) return handleLogout();
       fetchTemplates(); 
       fetchStats();
     } catch (err) {
@@ -221,6 +221,27 @@ export default function AdminPage() {
   const handleLogout = () => {
     localStorage.removeItem("adminToken");
     setIsAuthenticated(false);
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/reset-password`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", ...getAuthHeader() },
+        body: JSON.stringify({ oldPassword: oldPass, newPassword: newPass })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Password updated successfully");
+        setShowResetModal(false);
+        setOldPass(""); setNewPass("");
+      } else {
+        alert(data.error || "Failed to update password");
+      }
+    } catch (err) {
+      alert("Network error.");
+    }
   };
 
   const getFeaturesCount = () => {
@@ -625,13 +646,14 @@ export default function AdminPage() {
             </div>
             <h2 className="text-2xl font-black mb-2">Security Settings</h2>
             <p className="text-slate-500 mb-8">Update your admin password</p>
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+            <form className="space-y-4" onSubmit={handleResetPassword}>
               <input 
                 type="password" 
                 placeholder="Current Password" 
                 value={oldPass} 
                 onChange={(e) => setOldPass(e.target.value)} 
                 className="w-full px-5 py-4 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900" 
+                required
               />
               <input 
                 type="password" 
@@ -639,8 +661,9 @@ export default function AdminPage() {
                 value={newPass} 
                 onChange={(e) => setNewPass(e.target.value)} 
                 className="w-full px-5 py-4 bg-slate-50 border rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-900" 
+                required
               />
-              <button className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition-colors">
+              <button type="submit" className="w-full bg-slate-900 text-white font-bold py-4 rounded-xl hover:bg-slate-800 transition-colors">
                 Update Password
               </button>
             </form>

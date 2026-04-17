@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import ReactGA from "react-ga4";
+import { Routes, Route, useNavigate, useLocation, Navigate, useSearchParams } from "react-router-dom";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -32,26 +33,21 @@ if (GA_ID) {
 const API_BASE_URL = import.meta.env.VITE_API_URL || "https://sheetstore-backend.onrender.com";
 
 export default function App() {
-  // ==============================
-  // 1️⃣ SMART ROUTING LOGIC (UPDATED FOR VERCEL FIX)
-  // ==============================
-  const [route, setRoute] = useState(() => {
-    const path = window.location.pathname;
-    const searchParams = new URLSearchParams(window.location.search);
-    
-    // 🔥 JADUU YAHAN HAI: Agar URL mein orderId hai, toh seedha Success Page kholo!
-    if (searchParams.has("orderId")) {
-      return { path: "success", params: { orderId: searchParams.get("orderId") } };
-    }
-
-    if (path === "/admin") return { path: "admin", params: {} };
-    return { path: "home", params: {} };
-  });
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
   const [toastConfig, setToastConfig] = useState({ isVisible: false, message: "" });
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isProgressVisible, setIsProgressVisible] = useState(false);
+
+  // Magic redirect for Razorpay Success without losing query params.
+  useEffect(() => {
+    if (searchParams.has("orderId") && location.pathname !== "/success") {
+      navigate(`/success?orderId=${searchParams.get("orderId")}`, { replace: true });
+    }
+  }, [searchParams, location.pathname, navigate]);
 
   // ==============================
   // 2️⃣ SCROLL & PROGRESS EFFECTS
@@ -71,7 +67,7 @@ export default function App() {
 
     // Track Page View
     if (GA_ID) {
-      ReactGA.send({ hitType: "pageview", page: window.location.pathname });
+      ReactGA.send({ hitType: "pageview", page: location.pathname });
     }
 
     // Progress Bar Animation
@@ -88,16 +84,15 @@ export default function App() {
     return () => {
       clearTimeout(step1); clearTimeout(step2); clearTimeout(step3); clearTimeout(hideTimer);
     };
-  }, [route.path, route.params]);
+  }, [location.pathname]);
 
-  // ==============================
-  // 3️⃣ NAVIGATION HANDLER
-  // ==============================
-  const navigate = (path, params = {}) => {
-    // Basic browser history support
-    const url = path === "home" ? "/" : `/${path}`;
-    window.history.pushState({}, "", url);
-    setRoute({ path, params });
+  // Compatibility wrapper for old custom navigate calls
+  const handleNavigate = (path, params = {}) => {
+    if (path === "home") navigate("/");
+    else if (path === "category") navigate(`/category/${params.name}`);
+    else if (path === "template") navigate(`/template/${params.id}`);
+    else if (path === "success") navigate(`/success?orderId=${params.orderId}`);
+    else navigate(`/${path}`);
   };
 
   // ==============================
@@ -139,8 +134,7 @@ export default function App() {
             if (data.success) {
               if (GA_ID) ReactGA.event({ category: "Sales", action: "Payment Success", label: template.title });
               
-              // 🔥 YAHAN CHANGE KIYA HAI: Safe URL Redirect taaki screen wapas home par na jaye
-              window.location.href = `/?orderId=${response.razorpay_order_id}`;
+              navigate(`/success?orderId=${response.razorpay_order_id}`);
             } else {
               alert("Payment verification failed. Please contact support.");
             }
@@ -157,29 +151,6 @@ export default function App() {
     } catch (error) {
       console.error("Payment Error:", error);
       alert("Something went wrong with the payment gateway.");
-    }
-  };
-
-  // ==============================
-  // 4️⃣ RENDER SWITCH
-  // ==============================
-  const renderPage = () => {
-    switch (route.path) {
-      case "home": return <HomePage onNavigate={navigate} onBuy={handleBuyClick} />;
-      case "templates": return <TemplatesPage onNavigate={navigate} onBuy={handleBuyClick} />;
-      case "template": return <TemplateDetailPage id={route.params.id} onNavigate={navigate} onBuy={handleBuyClick} />;
-      case "categories": return <CategoriesPage onNavigate={navigate} />;
-      case "category": return <TemplatesPage onNavigate={navigate} onBuy={handleBuyClick} initialCategory={route.params.name} />;
-      case "about": return <AboutPage />;
-      case "tools": return <FreeToolsPage onNavigate={navigate} />;
-      case "privacy": return <PrivacyPage onNavigate={navigate} />;
-      case "terms": return <TermsPage onNavigate={navigate} />;
-      case "refund": return <RefundPage onNavigate={navigate} />;
-      case "contact": return <ContactPage onNavigate={navigate} />;
-      case "shipping": return <ShippingPolicy />;
-      case "admin": return <AdminPage onNavigate={navigate} />;
-      case "success": return <SuccessPage orderId={route.params.orderId} onNavigate={navigate} />;
-      default: return <HomePage onNavigate={navigate} onBuy={handleBuyClick} />;
     }
   };
 
@@ -206,9 +177,29 @@ export default function App() {
         </div>
       )}
 
-      <Navbar onNavigate={navigate} currentPath={route.path} />
-      <main className="flex-grow">{renderPage()}</main>
-      <Footer onNavigate={navigate} />
+      <Navbar onNavigate={handleNavigate} />
+      
+      <main className="flex-grow">
+        <Routes>
+          <Route path="/" element={<HomePage onNavigate={handleNavigate} onBuy={handleBuyClick} />} />
+          <Route path="/templates" element={<TemplatesPage onNavigate={handleNavigate} onBuy={handleBuyClick} />} />
+          <Route path="/template/:id" element={<TemplateDetailPageWrapper onNavigate={handleNavigate} onBuy={handleBuyClick} />} />
+          <Route path="/categories" element={<CategoriesPage onNavigate={handleNavigate} />} />
+          <Route path="/category/:name" element={<CategoryPageWrapper onNavigate={handleNavigate} onBuy={handleBuyClick} />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/tools" element={<FreeToolsPage onNavigate={handleNavigate} />} />
+          <Route path="/privacy" element={<PrivacyPage onNavigate={handleNavigate} />} />
+          <Route path="/terms" element={<TermsPage onNavigate={handleNavigate} />} />
+          <Route path="/refund" element={<RefundPage onNavigate={handleNavigate} />} />
+          <Route path="/contact" element={<ContactPage onNavigate={handleNavigate} />} />
+          <Route path="/shipping" element={<ShippingPolicy />} />
+          <Route path="/admin" element={<AdminPage onNavigate={handleNavigate} />} />
+          <Route path="/success" element={<SuccessPageWrapper onNavigate={handleNavigate} />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
+      
+      <Footer onNavigate={handleNavigate} />
 
       <Toast message={toastConfig.message} isVisible={toastConfig.isVisible} onClose={() => setToastConfig({ isVisible: false, message: "" })} />
 
@@ -220,4 +211,23 @@ export default function App() {
       )}
     </div>
   );
+}
+
+// Wrappers to extract URL params for existing components
+import { useParams } from 'react-router-dom';
+
+function TemplateDetailPageWrapper(props) {
+  const { id } = useParams();
+  return <TemplateDetailPage {...props} id={id} />;
+}
+
+function CategoryPageWrapper(props) {
+  const { name } = useParams();
+  return <TemplatesPage {...props} initialCategory={name} />;
+}
+
+function SuccessPageWrapper(props) {
+  const [searchParams] = useSearchParams();
+  const orderId = searchParams.get("orderId");
+  return <SuccessPage {...props} orderId={orderId} />;
 }
