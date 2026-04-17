@@ -306,9 +306,24 @@ app.get("/download/:templateId", async (req, res) => {
 // ================= ADMIN DASHBOARD & LOGIN =================
 app.get("/admin/stats", authenticateAdmin, async (req, res) => {
   try {
-    const totalOrdersCount = await Order.countDocuments({ status: "paid" });
+    const { startDate, endDate } = req.query;
+    
+    let orderFilter = { status: "paid" };
+    
+    if (startDate && endDate) {
+      // Set to end of the day for endDate to ensure full day coverage
+      const endOfDay = new Date(endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      orderFilter.createdAt = { 
+        $gte: new Date(startDate), 
+        $lte: endOfDay 
+      };
+    }
+
+    const totalOrdersCount = await Order.countDocuments(orderFilter);
     const totalTemplates = await Template.countDocuments();
-    const orders = await Order.find({ status: "paid" });
+    const orders = await Order.find(orderFilter);
     const totalRevenue = orders.reduce((sum, order) => sum + (order.amount || 0), 0);
 
     res.json({ totalRevenue, totalOrders: totalOrdersCount, totalTemplates });

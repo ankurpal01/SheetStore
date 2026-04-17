@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { 
   Lock, FileSpreadsheet, Link as LinkIcon, Download, 
   TrendingUp, ShoppingBag, Layers, Settings, X, Key,
-  Eye, EyeOff
+  Eye, EyeOff, Calendar
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -10,6 +10,9 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState("products");
   
   const [stats, setStats] = useState({ totalRevenue: 0, totalOrders: 0, totalTemplates: 0 });
+  const [timeFilter, setTimeFilter] = useState("all_time");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
   const [loginUser, setLoginUser] = useState("");
   const [loginPass, setLoginPass] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -53,13 +56,40 @@ export default function AdminPage() {
     if (isAuthenticated) {
       fetchCategories();
       fetchTemplates();
-      fetchStats();
     }
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchStats();
+    }
+  }, [isAuthenticated, timeFilter, customStart, customEnd]);
+
   const fetchStats = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/stats`, { headers: getAuthHeader() });
+      let query = "";
+      if (timeFilter !== "all_time") {
+        const today = new Date();
+        let start = new Date();
+        let end = new Date();
+        
+        if (timeFilter === "today") {
+          start.setHours(0, 0, 0, 0);
+        } else if (timeFilter === "this_week") {
+          start.setDate(today.getDate() - today.getDay());
+          start.setHours(0, 0, 0, 0);
+        } else if (timeFilter === "this_month") {
+          start.setDate(1);
+          start.setHours(0, 0, 0, 0);
+        } else if (timeFilter === "custom") {
+          if (!customStart || !customEnd) return; // Wait for both dates
+          start = new Date(customStart);
+          end = new Date(customEnd);
+        }
+        query = `?startDate=${start.toISOString()}&endDate=${end.toISOString()}`;
+      }
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/stats${query}`, { headers: getAuthHeader() });
       if (res.status === 401) return handleLogout();
       const data = await res.json();
       setStats(data);
@@ -344,11 +374,48 @@ export default function AdminPage() {
       </div>
 
       {/* DASHBOARD STATS */}
-      <div className="flex justify-between items-end mb-4">
-        <h2 className="text-xl font-bold text-slate-800">Overview</h2>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-4 gap-4">
+        <div>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">Overview</h2>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+              <Calendar className="w-4 h-4 text-slate-400 ml-2" />
+              <select 
+                value={timeFilter}
+                onChange={(e) => setTimeFilter(e.target.value)}
+                className="text-sm font-bold text-slate-700 bg-transparent outline-none pr-2 py-1 cursor-pointer"
+              >
+                <option value="all_time">All Time</option>
+                <option value="today">Today</option>
+                <option value="this_week">This Week</option>
+                <option value="this_month">This Month</option>
+                <option value="custom">Custom Date</option>
+              </select>
+            </div>
+            
+            {timeFilter === "custom" && (
+              <div className="flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3 py-1.5 shadow-sm animate-fade-in">
+                <input 
+                  type="date" 
+                  value={customStart}
+                  onChange={(e) => setCustomStart(e.target.value)}
+                  className="text-sm outline-none text-slate-600 cursor-pointer bg-transparent"
+                />
+                <span className="text-slate-400 font-medium">to</span>
+                <input 
+                  type="date" 
+                  value={customEnd}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                  className="text-sm outline-none text-slate-600 cursor-pointer bg-transparent"
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
         <button 
           onClick={handleClearOrders}
-          className="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg transition-colors border border-red-100"
+          className="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg transition-colors border border-red-100 shrink-0"
         >
           Reset Revenue Data
         </button>
