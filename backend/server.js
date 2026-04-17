@@ -317,6 +317,15 @@ app.get("/admin/stats", authenticateAdmin, async (req, res) => {
   }
 });
 
+app.delete("/admin/clear-orders", authenticateAdmin, async (req, res) => {
+  try {
+    await Order.deleteMany({});
+    res.json({ message: "All test orders cleared successfully" });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to clear orders" });
+  }
+});
+
 app.post("/admin/login", async (req, res) => {
   try {
     const { username, password } = req.body;

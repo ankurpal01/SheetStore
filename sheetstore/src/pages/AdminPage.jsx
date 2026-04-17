@@ -246,6 +246,25 @@ export default function AdminPage() {
     }
   };
 
+  const handleClearOrders = async () => {
+    if (!window.confirm("Are you sure you want to delete ALL orders and reset revenue to 0? This is irreversible!")) return;
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/admin/clear-orders`, {
+        method: "DELETE",
+        headers: getAuthHeader()
+      });
+      if (res.status === 401) return handleLogout();
+      if (res.ok) {
+        alert("Test data cleared successfully! You will now see genuine data.");
+        fetchStats();
+      } else {
+        alert("Failed to clear orders.");
+      }
+    } catch (err) {
+      alert("Network error.");
+    }
+  };
+
   const getFeaturesCount = () => {
     return features.split(',').filter(f => f.trim()).length;
   };
@@ -325,6 +344,15 @@ export default function AdminPage() {
       </div>
 
       {/* DASHBOARD STATS */}
+      <div className="flex justify-between items-end mb-4">
+        <h2 className="text-xl font-bold text-slate-800">Overview</h2>
+        <button 
+          onClick={handleClearOrders}
+          className="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-lg transition-colors border border-red-100"
+        >
+          Reset Revenue Data
+        </button>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4">
           <div className="p-4 bg-emerald-50 text-emerald-600 rounded-xl">
