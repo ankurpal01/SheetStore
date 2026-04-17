@@ -159,7 +159,12 @@ export default function App() {
   const strokeDashoffset = circleCircumference - (progress / 100) * circleCircumference;
 
   return (
-    <div className="min-h-screen flex flex-col relative font-sans selection:bg-indigo-100">
+    <div className="min-h-screen flex flex-col relative font-sans selection:bg-indigo-100 bg-slate-50 overflow-hidden">
+      
+      {/* GLOBAL BACKGROUND - EXCEL FEEL */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-0" style={{ backgroundImage: `linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)`, backgroundSize: '24px 24px' }}></div>
+      <div className="fixed top-0 right-0 w-[600px] h-[600px] bg-indigo-200/40 rounded-full blur-[120px] pointer-events-none -translate-y-1/2 translate-x-1/3 z-0"></div>
+      <div className="fixed bottom-0 left-0 w-[600px] h-[600px] bg-violet-200/40 rounded-full blur-[120px] pointer-events-none translate-y-1/3 -translate-x-1/3 z-0"></div>
       
       {/* 🚀 PROGRESS LOADER */}
       {isProgressVisible && (
@@ -177,9 +182,11 @@ export default function App() {
         </div>
       )}
 
-      <Navbar onNavigate={handleNavigate} />
+      <div className="print:hidden relative z-10">
+        <Navbar onNavigate={handleNavigate} />
+      </div>
       
-      <main className="flex-grow">
+      <main className="flex-grow relative z-10">
         <Routes>
           <Route path="/" element={<HomePage onNavigate={handleNavigate} onBuy={handleBuyClick} />} />
           <Route path="/templates" element={<TemplatesPage onNavigate={handleNavigate} onBuy={handleBuyClick} />} />
@@ -199,7 +206,9 @@ export default function App() {
         </Routes>
       </main>
       
-      <Footer onNavigate={handleNavigate} />
+      <div className="print:hidden relative z-10">
+        <Footer onNavigate={handleNavigate} />
+      </div>
 
       <Toast message={toastConfig.message} isVisible={toastConfig.isVisible} onClose={() => setToastConfig({ isVisible: false, message: "" })} />
 

@@ -52,13 +52,8 @@ const ContactPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 selection:bg-indigo-200 relative overflow-hidden flex items-center">
+    <div className="min-h-screen relative overflow-hidden flex items-center">
       
-      {/* Background Subtle Grid & Blobs */}
-      <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: `linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)`, backgroundSize: '24px 24px' }}></div>
-      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-200/40 rounded-full blur-[120px] pointer-events-none -translate-y-1/2 translate-x-1/3"></div>
-      <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-violet-200/40 rounded-full blur-[120px] pointer-events-none translate-y-1/3 -translate-x-1/3"></div>
-
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20 relative z-10 w-full">
         
         <div className="bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] overflow-hidden flex flex-col lg:flex-row border border-slate-100">

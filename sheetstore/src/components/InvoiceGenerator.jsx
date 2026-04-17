@@ -63,10 +63,10 @@ export default function InvoiceGenerator() {
   };
 
   return (
-    <div className="flex flex-col xl:flex-row gap-8 items-start w-full print:block">
+    <div className="flex flex-col gap-10 items-center w-full print:block max-w-4xl mx-auto">
       
       {/* LEFT PANE - FORM (Hidden during print) */}
-      <div className="w-full xl:w-[45%] bg-white rounded-3xl border border-slate-200 shadow-xl p-6 md:p-8 shrink-0 print:hidden sticky top-24 max-h-[85vh] overflow-y-auto custom-scrollbar">
+      <div className="w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-6 md:p-10 shrink-0 print:hidden">
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
             <FileText className="w-5 h-5" />
@@ -186,7 +186,7 @@ export default function InvoiceGenerator() {
       </div>
 
       {/* RIGHT PANE - LIVE PREVIEW */}
-      <div className="w-full xl:w-[55%] flex flex-col gap-6 print:w-full print:block">
+      <div className="w-full flex flex-col gap-6 print:w-full print:block mt-8">
         
         {/* Action Bar (Hidden during print) */}
         <div className="flex flex-col sm:flex-row items-center justify-between bg-white rounded-2xl p-4 shadow-sm border border-slate-200 print:hidden gap-4">
