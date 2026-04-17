@@ -159,7 +159,7 @@ export default function App() {
   const strokeDashoffset = circleCircumference - (progress / 100) * circleCircumference;
 
   return (
-    <div className="min-h-screen flex flex-col relative font-sans selection:bg-indigo-100 bg-slate-50 overflow-hidden">
+    <div className="min-h-screen flex flex-col relative font-sans selection:bg-indigo-100 bg-slate-50">
       
       {/* GLOBAL BACKGROUND - EXCEL FEEL */}
       <div className="fixed inset-0 pointer-events-none opacity-[0.03] z-0" style={{ backgroundImage: `linear-gradient(to right, #000 1px, transparent 1px), linear-gradient(to bottom, #000 1px, transparent 1px)`, backgroundSize: '24px 24px' }}></div>
@@ -182,7 +182,7 @@ export default function App() {
         </div>
       )}
 
-      <div className="print:hidden relative z-10">
+      <div className="print:hidden relative z-50">
         <Navbar onNavigate={handleNavigate} />
       </div>
       
