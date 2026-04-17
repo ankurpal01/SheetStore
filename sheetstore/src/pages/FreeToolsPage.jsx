@@ -235,7 +235,7 @@ export default function FreeToolsPage({ onNavigate }) {
         <div className="flex flex-col lg:flex-row gap-8 items-start">
 
           {/* SIDEBAR */}
-          <div className="w-full lg:w-72 shrink-0 flex flex-col gap-2 sticky top-24 print:hidden">
+          <div className="w-full lg:w-72 shrink-0 flex flex-row overflow-x-auto lg:flex-col gap-3 lg:gap-2 lg:sticky top-24 print:hidden pb-4 lg:pb-0 snap-x hide-scrollbar">
             {tools.map(tool => {
               const Icon = tool.icon;
               const isActive = activeTool === tool.id;
@@ -243,16 +243,16 @@ export default function FreeToolsPage({ onNavigate }) {
                 <button 
                   key={tool.id} 
                   onClick={() => { setActiveTool(tool.id); resetAll(); }}
-                  className={`flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 text-left border-2 
+                  className={`flex items-center gap-3 lg:gap-4 p-3 lg:p-4 rounded-2xl transition-all duration-300 text-left border-2 shrink-0 w-64 lg:w-full snap-center
                     ${isActive ? 'bg-white border-indigo-200 shadow-xl shadow-indigo-100/50' : 'bg-transparent border-transparent hover:bg-white hover:border-slate-200'}`}
                 >
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors
+                  <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center shrink-0 transition-colors
                     ${isActive ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-500'}`}>
-                    <Icon className="w-6 h-6" />
+                    <Icon className="w-5 h-5 lg:w-6 lg:h-6" />
                   </div>
-                  <div>
-                    <h3 className={`font-bold ${isActive ? 'text-indigo-900' : 'text-slate-700'}`}>{tool.name}</h3>
-                    <p className={`text-xs font-medium ${isActive ? 'text-indigo-600/70' : 'text-slate-500'}`}>{tool.desc}</p>
+                  <div className="overflow-hidden">
+                    <h3 className={`font-bold whitespace-nowrap truncate text-sm lg:text-base ${isActive ? 'text-indigo-900' : 'text-slate-700'}`}>{tool.name}</h3>
+                    <p className={`text-xs font-medium whitespace-nowrap truncate ${isActive ? 'text-indigo-600/70' : 'text-slate-500'}`}>{tool.desc}</p>
                   </div>
                 </button>
               );
