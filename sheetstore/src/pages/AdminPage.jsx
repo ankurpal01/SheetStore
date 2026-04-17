@@ -1,7 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { 
   Lock, FileSpreadsheet, Link as LinkIcon, Download, 
-  TrendingUp, ShoppingBag, Layers, Settings, X, Key 
+  TrendingUp, ShoppingBag, Layers, Settings, X, Key,
+  Eye, EyeOff
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -11,6 +12,7 @@ export default function AdminPage() {
   const [stats, setStats] = useState({ totalRevenue: 0, totalOrders: 0, totalTemplates: 0 });
   const [loginUser, setLoginUser] = useState("");
   const [loginPass, setLoginPass] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
@@ -266,14 +268,23 @@ export default function AdminPage() {
               className="w-full px-5 py-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" 
               required 
             />
-            <input 
-              type="password" 
-              placeholder="Password" 
-              value={loginPass} 
-              onChange={(e) => setLoginPass(e.target.value)} 
-              className="w-full px-5 py-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" 
-              required 
-            />
+            <div className="relative">
+              <input 
+                type={showPassword ? "text" : "password"} 
+                placeholder="Password" 
+                value={loginPass} 
+                onChange={(e) => setLoginPass(e.target.value)} 
+                className="w-full px-5 py-4 border rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" 
+                required 
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
+            </div>
             
             {loginError && (
               <p className="text-red-500 text-sm font-medium">{loginError}</p>
