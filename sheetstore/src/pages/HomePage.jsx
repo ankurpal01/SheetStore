@@ -223,85 +223,69 @@ const HomePage = ({ onNavigate, onBuy }) => {
       <section className="py-32 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white relative overflow-hidden">
         
         {/* Animated Background */}
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-indigo-600/40 rounded-full blur-[150px] animate-pulse"></div>
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-emerald-600/40 rounded-full blur-[120px] animate-pulse animation-delay-2000"></div>
+        <div className="absolute inset-0 opacity-30 pointer-events-none">
+          <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-indigo-600/40 rounded-full blur-[150px] animate-pulse"></div>
+          <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-emerald-600/40 rounded-full blur-[120px] animate-pulse animation-delay-2000"></div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 grid lg:grid-cols-2 gap-20 items-center">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col items-center text-center">
           
-          {/* Left Content */}
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-bold text-xs uppercase tracking-wider mb-6">
-              <Star className="w-4 h-4 text-amber-400" /> Why Choose Us
-            </div>
-
-            <h2 className="text-5xl lg:text-6xl font-black mb-8 text-white tracking-tight leading-tight">
-              Stop building from scratch. <br /> 
-              Start with a <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-400 to-emerald-400">proven template.</span>
-            </h2>
-            
-            <p className="text-slate-300 text-xl mb-12 leading-relaxed">
-              We've spent hundreds of hours designing dashboards and writing complex formulas so you don't have to. Just download, plug in your data, and get instant results.
-            </p>
-
-            <div className="space-y-8">
-              {[
-                {
-                  icon: Clock,
-                  color: "indigo",
-                  title: "Save 100+ Hours",
-                  desc: "Skip the tedious formatting and formula troubleshooting. Download a fully functional tracker today and get your weekend back."
-                },
-                {
-                  icon: LayoutDashboard,
-                  color: "emerald",
-                  title: "Professional Dashboards",
-                  desc: "Impress your team and clients with stunning, automated visual reports that make complex data easy to understand instantly."
-                },
-                {
-                  icon: CheckCircle2,
-                  color: "violet",
-                  title: "Works in Excel & Google Sheets",
-                  desc: "Whether you prefer the desktop power of Excel or the cloud collaboration of Google Sheets, our templates work flawlessly."
-                }
-              ].map((item, i) => (
-                <div key={i} className="group flex gap-6 p-6 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:-translate-x-2">
-                  <div className={`w-16 h-16 rounded-2xl bg-${item.color}-500/20 flex items-center justify-center shrink-0 border border-${item.color}-500/30 group-hover:scale-110 transition-transform`}>
-                    <item.icon className={`w-8 h-8 text-${item.color}-400`} />
-                  </div>
-                  <div>
-                    <h4 className="text-2xl font-bold mb-3">{item.title}</h4>
-                    <p className="text-slate-400 text-lg leading-relaxed">
-                      {item.desc}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-12">
-              <button
-                onClick={() => onNavigate("templates")}
-                className="group px-10 py-5 bg-gradient-to-r from-indigo-500 via-violet-500 to-emerald-500 hover:from-indigo-400 hover:via-violet-400 hover:to-emerald-400 text-white font-bold text-lg rounded-2xl shadow-2xl shadow-indigo-500/30 transition-all transform hover:-translate-y-1 hover:scale-105 flex items-center gap-3"
-              >
-                Browse All Templates
-                <TrendingUp className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-              </button>
-            </div>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white font-bold text-xs uppercase tracking-wider mb-6">
+            <Star className="w-4 h-4 text-amber-400" /> Why Choose Us
           </div>
 
-          {/* Right Image */}
-          <div className="relative lg:scale-110">
-            <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500 via-violet-500 to-emerald-500 rounded-3xl rotate-6 scale-105 opacity-30 blur-3xl animate-pulse"></div>
-            <div className="relative group">
-              <img
-                src={homeHero}
-                alt="Premium Excel & Google Sheets Templates"
-                className="relative rounded-3xl shadow-2xl border-4 border-white/20 w-full object-cover aspect-[4/3] group-hover:scale-105 transition-transform duration-500"
-              />
-              <div className="absolute inset-0 bg-gradient-to-tr from-indigo-600/20 to-emerald-600/20 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            </div>
+          <h2 className="text-5xl lg:text-6xl font-black mb-8 text-white tracking-tight leading-tight max-w-4xl">
+            Stop building from scratch. <br className="hidden sm:block" /> 
+            Start with a <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-violet-400 to-emerald-400">proven template.</span>
+          </h2>
+          
+          <p className="text-slate-300 text-xl mb-16 leading-relaxed max-w-3xl">
+            We've spent hundreds of hours designing dashboards and writing complex formulas so you don't have to. Just download, plug in your data, and get instant results.
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-8 w-full text-left mb-16">
+            {[
+              {
+                icon: Clock,
+                color: "indigo",
+                title: "Save 100+ Hours",
+                desc: "Skip the tedious formatting and formula troubleshooting. Download a fully functional tracker today."
+              },
+              {
+                icon: LayoutDashboard,
+                color: "emerald",
+                title: "Pro Dashboards",
+                desc: "Impress your team with stunning, automated visual reports that make complex data easy to understand."
+              },
+              {
+                icon: CheckCircle2,
+                color: "violet",
+                title: "Universal Support",
+                desc: "Whether you prefer the desktop power of Excel or the cloud collaboration of Google Sheets."
+              }
+            ].map((item, i) => (
+              <div key={i} className="group flex flex-col items-start gap-6 p-8 rounded-3xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:-translate-y-2">
+                <div className={`w-16 h-16 rounded-2xl bg-${item.color}-500/20 flex items-center justify-center shrink-0 border border-${item.color}-500/30 group-hover:scale-110 transition-transform`}>
+                  <item.icon className={`w-8 h-8 text-${item.color}-400`} />
+                </div>
+                <div>
+                  <h4 className="text-2xl font-bold mb-3">{item.title}</h4>
+                  <p className="text-slate-400 text-lg leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <button
+              onClick={() => onNavigate("templates")}
+              className="group px-10 py-5 bg-gradient-to-r from-indigo-500 via-violet-500 to-emerald-500 hover:from-indigo-400 hover:via-violet-400 hover:to-emerald-400 text-white font-bold text-lg rounded-2xl shadow-2xl shadow-indigo-500/30 transition-all transform hover:-translate-y-1 hover:scale-105 flex items-center gap-3"
+            >
+              Browse All Templates
+              <TrendingUp className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+            </button>
           </div>
         </div>
       </section>
