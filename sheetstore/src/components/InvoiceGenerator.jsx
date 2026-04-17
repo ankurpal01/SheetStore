@@ -236,8 +236,8 @@ export default function InvoiceGenerator() {
             </div>
 
             {/* Table */}
-            <div className="mb-12 print:mb-6">
-              <table className="w-full text-left">
+            <div className="mb-12 print:mb-6 overflow-x-auto">
+              <table className="w-full text-left min-w-[500px]">
                 <thead>
                   <tr className="border-b-2 border-slate-900 text-sm font-black text-slate-900 uppercase">
                     <th className="py-4 pr-4">Description</th>

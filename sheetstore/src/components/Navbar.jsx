@@ -352,9 +352,6 @@ export default function Navbar({ onNavigate, currentPath }) {
               className="logo-btn"
               onClick={() => { onNavigate("home"); setIsMobileMenuOpen(false); }}
             >
-              <div className="logo-mark">
-                <img src="/logo.png" alt="SheetStore" />
-              </div>
               <span className="logo-text">
                 Sheet<span>Store</span>
               </span>
