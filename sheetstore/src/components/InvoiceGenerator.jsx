@@ -321,10 +321,7 @@ export default function InvoiceGenerator() {
                     </tr>
                   );
                 })}
-                {/* Fill empty space for layout (mock row) */}
-                <tr className="divide-x-2 divide-slate-900 h-24 print:h-48 bg-slate-50/20">
-                  <td></td><td></td><td></td><td></td><td></td><td></td>
-                </tr>
+                {/* Table automatically sizes to content to avoid multi-page overflow */}
               </tbody>
             </table>
           </div>
