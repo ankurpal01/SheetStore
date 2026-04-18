@@ -278,20 +278,12 @@ export default function InvoiceGenerator() {
             </div>
           </div>
 
-          {/* Billing & Shipping */}
-          <div className="grid grid-cols-2 border-b-2 border-slate-900 divide-x-2 divide-slate-900 text-sm">
-            <div className="p-4 space-y-1">
-              <h3 className="font-black uppercase tracking-wider mb-3 text-xs bg-slate-100 inline-block px-2 py-1 rounded">Billing Details</h3>
-              <p className="font-black text-base">{data.clientName || 'Client Name'}</p>
-              <p className="whitespace-pre-wrap text-slate-600 text-xs leading-relaxed">{data.clientAddress || 'Client Address\nCity, State ZIP'}</p>
-              {data.clientGst && <p className="pt-2 text-xs">GSTIN: <span className="font-black uppercase">{data.clientGst}</span></p>}
-            </div>
-            <div className="p-4 space-y-1 bg-slate-50/50">
-              <h3 className="font-black uppercase tracking-wider mb-3 text-xs bg-slate-100 inline-block px-2 py-1 rounded">Shipping Details</h3>
-              <p className="font-black text-base">{data.clientName || 'Client Name'}</p>
-              <p className="whitespace-pre-wrap text-slate-600 text-xs leading-relaxed">{data.clientAddress || 'Client Address\nCity, State ZIP'}</p>
-              {data.clientGst && <p className="pt-2 text-xs">GSTIN: <span className="font-black uppercase">{data.clientGst}</span></p>}
-            </div>
+          {/* Client Details */}
+          <div className="border-b-2 border-slate-900 text-sm p-5 bg-slate-50/30">
+            <h3 className="font-black uppercase tracking-wider mb-3 text-xs bg-slate-200 text-slate-700 inline-block px-3 py-1 rounded-md border border-slate-300">Billed To</h3>
+            <p className="font-black text-lg text-slate-900 mb-1">{data.clientName || 'Client Name'}</p>
+            <p className="whitespace-pre-wrap text-slate-700 text-sm leading-relaxed max-w-2xl">{data.clientAddress || 'Client Address\nCity, State ZIP'}</p>
+            {data.clientGst && <p className="mt-2 text-sm font-bold text-slate-800">GSTIN: <span className="font-black text-slate-900 uppercase">{data.clientGst}</span></p>}
           </div>
 
           {/* Table */}
