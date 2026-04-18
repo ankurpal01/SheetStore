@@ -248,51 +248,32 @@ export default function InvoiceGenerator() {
           </div>
 
           {/* Company Details */}
-          <div className="flex border-b-2 border-slate-900 relative">
-            {/* Logo Placeholder */}
-            <div className="absolute left-4 top-4 w-24 h-24 border-2 border-slate-300 flex items-center justify-center text-slate-400 font-bold text-xs text-center p-2 rounded-lg bg-slate-50">
-              Add Logo
-            </div>
-            
-            <div className="w-full text-center py-6 px-32 flex flex-col items-center justify-center min-h-[140px]">
-              <h2 className="text-2xl font-black uppercase mb-1">{data.bizName || 'Company Name'}</h2>
+          <div className="border-b-2 border-slate-900">
+            <div className="w-full text-center py-6 px-8 flex flex-col items-center justify-center min-h-[140px]">
+              <h2 className="text-3xl font-black uppercase mb-2 tracking-tight text-slate-900">{data.bizName || 'Company Name'}</h2>
               <p className="text-sm whitespace-pre-wrap leading-snug text-slate-700">{data.bizAddress || 'Company Address\nCity, State ZIP'}</p>
-              <div className="mt-2 text-xs font-bold space-y-0.5">
-                {data.bizGst && <p>GSTIN: <span className="font-black text-slate-900 uppercase">{data.bizGst}</span></p>}
-              </div>
+              {data.bizGst && (
+                <div className="mt-3 text-sm font-bold bg-slate-100 px-3 py-1 rounded-md border border-slate-200">
+                  GSTIN: <span className="font-black text-slate-900 uppercase">{data.bizGst}</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Invoice Info & Transporter */}
-          <div className="grid grid-cols-2 border-b-2 border-slate-900 divide-x-2 divide-slate-900 text-xs">
-            <div className="p-4 space-y-2">
-              <div className="grid grid-cols-2 gap-2 gap-x-4">
-                <span className="font-medium text-slate-600">Invoice Number:</span>
-                <span className="font-bold">{data.invoiceNumber || '---'}</span>
-                
-                <span className="font-medium text-slate-600">Invoice Date:</span>
-                <span className="font-bold">{data.issueDate ? new Date(data.issueDate).toLocaleDateString() : '---'}</span>
-                
-                <span className="font-medium text-slate-600">Due Date:</span>
-                <span className="font-bold">{data.dueDate ? new Date(data.dueDate).toLocaleDateString() : '---'}</span>
-                
-                <span className="font-medium text-slate-600">Place of Supply:</span>
-                <span className="font-bold">---</span>
-                
-                <span className="font-medium text-slate-600">Reverse Charge:</span>
-                <span className="font-bold">No</span>
+          {/* Invoice Info */}
+          <div className="border-b-2 border-slate-900 text-sm bg-slate-50/30">
+            <div className="grid grid-cols-3 divide-x-2 divide-slate-900 text-center">
+              <div className="p-4 flex flex-col items-center justify-center">
+                <span className="font-medium text-slate-500 text-xs uppercase tracking-widest mb-1">Invoice Number</span>
+                <span className="font-black text-lg text-slate-900">{data.invoiceNumber || '---'}</span>
               </div>
-            </div>
-            <div className="p-4 space-y-2 bg-slate-50/50">
-              <div className="grid grid-cols-2 gap-2 gap-x-4">
-                <span className="font-medium text-slate-600">Transporter Details:</span>
-                <span className="font-bold">---</span>
-                
-                <span className="font-medium text-slate-600">Vehicle No.:</span>
-                <span className="font-bold">---</span>
-                
-                <span className="font-medium text-slate-600">E-Way Bill No.:</span>
-                <span className="font-bold">---</span>
+              <div className="p-4 flex flex-col items-center justify-center">
+                <span className="font-medium text-slate-500 text-xs uppercase tracking-widest mb-1">Invoice Date</span>
+                <span className="font-bold text-slate-900">{data.issueDate ? new Date(data.issueDate).toLocaleDateString() : '---'}</span>
+              </div>
+              <div className="p-4 flex flex-col items-center justify-center">
+                <span className="font-medium text-slate-500 text-xs uppercase tracking-widest mb-1">Due Date</span>
+                <span className="font-bold text-slate-900">{data.dueDate ? new Date(data.dueDate).toLocaleDateString() : '---'}</span>
               </div>
             </div>
           </div>
